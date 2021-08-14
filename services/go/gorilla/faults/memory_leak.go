@@ -8,14 +8,14 @@ import (
 )
 
 type MemoryLeak struct {
-	Size     int   `json:"size"`
-	Duration int64 `json:"duration"`
+	Size     int `json:"size"`		// In Megabytes
+	Duration int `json:"duration"`	// In Millisecond
 }
 
 func (m MemoryLeak) Run() error {
 
 	// Creates a goroutine that writes a big string to memory
-	go func() string{
+	go func() string {
 		log.Printf("creating memory leak of %dMB for %d seconds", m.Size, m.Duration)
 		leak := strings.Repeat("a", m.Size*1024*1024)
 

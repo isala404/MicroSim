@@ -5,7 +5,7 @@ import (
 )
 
 type Latency struct {
-	Delay int64 `json:"delay"`
+	Delay int `json:"delay"` // In Millisecond
 }
 
 func (l Latency) Run() error {
