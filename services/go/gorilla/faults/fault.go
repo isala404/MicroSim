@@ -35,6 +35,12 @@ func (f *Faults) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			faults[i] = l
+		case "memory-leak":
+			l := MemoryLeak{}
+			if err := json.Unmarshal(faultType.Args, &l); err != nil {
+				return err
+			}
+			faults[i] = l
 		case "":
 			return errors.New("fault type was not defined")
 		default:
