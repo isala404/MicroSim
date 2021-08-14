@@ -1,0 +1,16 @@
+domain: isala.me
+layout:
+- go.kubebuilder.io/v3
+projectName: control-plane
+repo: github.com/MrSupiri/MicroSim
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: isala.me
+  group: microsim
+  kind: Simulation
+  path: github.com/MrSupiri/MicroSim/api/v1alpha1
+  version: v1alpha1
+version: "3"
