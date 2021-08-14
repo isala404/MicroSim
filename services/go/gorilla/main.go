@@ -1,25 +1,88 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"github.com/MrSupiri/MicroSim/service/gorilla/faults"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
-func main() {
-	r := mux.NewRouter()
+var serviceName string
+var port string
 
-	// IMPORTANT: you must specify an OPTIONS method matcher for the middleware to set CORS headers
-	r.HandleFunc("/", fooHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
-	r.Use(mux.CORSMethodMiddleware(r))
-
-	_ = http.ListenAndServe(":8080", r)
+type Payload struct {
+	Designation string `json:"designation,omitempty"`
+	Faults      struct {
+		Before faults.Faults `json:"before,omitempty"`
+		After  faults.Faults `json:"after,omitempty"`
+	} `json:"faults,omitempty"`
+	Payload *json.RawMessage `json:"payload,omitempty"`
 }
 
-func fooHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	if r.Method == http.MethodOptions {
+type Response struct {
+	Service  string    `json:"service"`
+	Address  string    `json:"address"`
+	Errors   []string  `json:"errors"`
+	Response *Response `json:"response"`
+}
+
+func main() {
+	flag.StringVar(&serviceName, "service-name", "Undefined", "The name set on the response")
+	flag.StringVar(&port, "addr", ":8080", "The address the web server will bind to")
+	flag.Parse()
+
+	r := mux.NewRouter()
+	r.HandleFunc("/", handler).Methods(http.MethodPost)
+	r.Use(mux.CORSMethodMiddleware(r))
+	r.Use(loggingMiddleware)
+
+	fmt.Printf("service: %s, started on %s\n", serviceName, port)
+	_ = http.ListenAndServe(port, r)
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	var payload Payload
+	res := Response{Service: serviceName, Errors: []string{}}
+
+	w.Header().Set("content-type", "application/json")
+
+	// Get the request payload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		res.Errors = append(res.Errors, err.Error())
+		_ = json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	_, _ = w.Write([]byte("foo"))
+	// Set the incoming request designation as the address for this service
+	res.Address = payload.Designation
+
+	// Run fault faults
+	for _, fault := range payload.Faults.Before {
+		if err := fault.Run(); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+		}
+	}
+
+	// Forward the request to next service if the destination is defined
+	if payload.Payload != nil {
+		var err error
+		if res.Response, err = callNextDestination(*payload.Payload); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+			log.Println("error while forwarding request", err)
+		}
+	}
+
+	// Run post faults
+	for _, fault := range payload.Faults.After {
+		if err := fault.Run(); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+		}
+	}
+
+	// Return the response to calling service
+	_ = json.NewEncoder(w).Encode(res)
 }
