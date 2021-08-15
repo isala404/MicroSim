@@ -9,6 +9,32 @@ rules:
 - apiGroups:
   - microsim.isala.me
   resources:
+  - loadgenerators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - microsim.isala.me
+  resources:
+  - loadgenerators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - microsim.isala.me
+  resources:
+  - loadgenerators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - microsim.isala.me
+  resources:
   - simulations
   verbs:
   - create

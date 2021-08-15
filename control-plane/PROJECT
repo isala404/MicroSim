@@ -13,4 +13,13 @@ resources:
   kind: Simulation
   path: github.com/MrSupiri/MicroSim/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: isala.me
+  group: microsim
+  kind: LoadGenerator
+  path: github.com/MrSupiri/MicroSim/api/v1alpha1
+  version: v1alpha1
 version: "3"

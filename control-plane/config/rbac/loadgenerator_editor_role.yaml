@@ -1,0 +1,24 @@
+# permissions for end users to edit loadgenerators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loadgenerator-editor-role
+rules:
+- apiGroups:
+  - microsim.isala.me
+  resources:
+  - loadgenerators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - microsim.isala.me
+  resources:
+  - loadgenerators/status
+  verbs:
+  - get
