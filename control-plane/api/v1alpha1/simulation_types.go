@@ -23,19 +23,25 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type ServiceSpec struct {
+	Framework string `json:"framework"`
+	Version   string `json:"version"`
+}
+
+type ServiceStatus struct {
+	UID      string `json:"uid"`
+	Name     string `json:"name"`
+	Endpoint string `json:"endpoint"`
+}
+
 // SimulationSpec defines the desired state of Simulation
 type SimulationSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Simulation. Edit simulation_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Services []ServiceSpec `json:"services"`
 }
 
 // SimulationStatus defines the observed state of Simulation
 type SimulationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	ServicesStatus []ServiceStatus `json:"services_status"`
 }
 
 //+kubebuilder:object:root=true
