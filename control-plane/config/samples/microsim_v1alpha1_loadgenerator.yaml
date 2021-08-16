@@ -1,0 +1,7 @@
+apiVersion: microsim.isala.me/v1alpha1
+kind: LoadGenerator
+metadata:
+  name: loadgenerator-sample
+spec:
+  # Add fields here
+  foo: bar
