@@ -24,22 +24,20 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type ServiceSpec struct {
-	// +optional
-	Name      string `json:"name"`
 	Language  string `json:"language"`
 	Framework string `json:"framework"`
 }
 
 type ServiceStatus struct {
-	UID      string `json:"uid"`
-	Name     string `json:"name"`
-	Endpoint string `json:"endpoint"`
+	Endpoint  string `json:"endpoint"`
+	Language  string `json:"language"`
+	Framework string `json:"framework"`
 }
 
 // SimulationSpec defines the desired state of Simulation
 type SimulationSpec struct {
-	Name     string        `json:"name"`
-	Services []ServiceSpec `json:"services"`
+	Name     string                 `json:"name"`
+	Services map[string]ServiceSpec `json:"services"`
 }
 
 // SimulationStatus defines the observed state of Simulation

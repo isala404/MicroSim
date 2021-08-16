@@ -39,19 +39,17 @@ spec:
               name:
                 type: string
               services:
-                items:
+                additionalProperties:
                   properties:
                     framework:
                       type: string
                     language:
                       type: string
-                    name:
-                      type: string
                   required:
                   - framework
                   - language
                   type: object
-                type: array
+                type: object
             required:
             - name
             - services
@@ -64,14 +62,14 @@ spec:
                   properties:
                     endpoint:
                       type: string
-                    name:
+                    framework:
                       type: string
-                    uid:
+                    language:
                       type: string
                   required:
                   - endpoint
-                  - name
-                  - uid
+                  - framework
+                  - language
                   type: object
                 type: object
             required:
