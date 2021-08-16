@@ -36,13 +36,12 @@ type ServiceStatus struct {
 
 // SimulationSpec defines the desired state of Simulation
 type SimulationSpec struct {
-	Name     string                 `json:"name"`
 	Services map[string]ServiceSpec `json:"services"`
 }
 
 // SimulationStatus defines the observed state of Simulation
 type SimulationStatus struct {
-	ServicesStatus map[string]ServiceStatus `json:"services_status"`
+	Services map[string]ServiceStatus `json:"services"`
 }
 
 //+kubebuilder:object:root=true

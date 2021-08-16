@@ -31,7 +31,7 @@ type Response struct {
 
 func main() {
 	flag.StringVar(&serviceName, "service-name", "Undefined", "The name set on the response")
-	flag.StringVar(&port, "addr", ":80", "The address the web server will bind to")
+	flag.StringVar(&port, "addr", ":8080", "The address the web server will bind to")
 	flag.Parse()
 
 	// override of if ENV is present
@@ -43,7 +43,7 @@ func main() {
 	r.Use(loggingMiddleware)
 
 	fmt.Printf("service: %s, started on %s\n", serviceName, port)
-	_ = http.ListenAndServe(port, r)
+	panic(http.ListenAndServe(port, r))
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {

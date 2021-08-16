@@ -36,8 +36,6 @@ spec:
           spec:
             description: SimulationSpec defines the desired state of Simulation
             properties:
-              name:
-                type: string
               services:
                 additionalProperties:
                   properties:
@@ -51,13 +49,12 @@ spec:
                   type: object
                 type: object
             required:
-            - name
             - services
             type: object
           status:
             description: SimulationStatus defines the observed state of Simulation
             properties:
-              services_status:
+              services:
                 additionalProperties:
                   properties:
                     endpoint:
@@ -73,7 +70,7 @@ spec:
                   type: object
                 type: object
             required:
-            - services_status
+            - services
             type: object
         type: object
     served: true

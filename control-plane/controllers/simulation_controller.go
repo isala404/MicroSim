@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 )
 
 // SimulationReconciler reconciles a Simulation object
@@ -46,11 +47,6 @@ type SimulationReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Simulation object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -73,23 +69,26 @@ func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	ctx = context.WithValue(ctx, "simulation", simulation)
 
+	if len(simulation.Status.Services) == 0 {
+		simulation.Status.Services = map[string]microsimv1alpha1.ServiceStatus{}
+	}
+
 	requeue := false
 	for name, service := range simulation.Spec.Services {
-		name = fmt.Sprintf("%s-%s", name, simulation.ObjectMeta.UID[:10])
+		name = fmt.Sprintf("%s-%s", strings.Replace(name, "_", "-", -1), simulation.ObjectMeta.UID[:8])
 		// Check if the service is already deployed
-		if _, ok := simulation.Status.ServicesStatus[name]; ok{
+		if _, ok := simulation.Status.Services[name]; ok {
 			continue
 		}
 
 		// Create the Deployment and Service if not created before
-		if err := r.ProvisionIfNoExists(ctx, name, service); err != nil{
+		if err := r.ProvisionIfNoExists(ctx, name, service); err != nil {
 			// TODO: write the error here to CRD events
 			requeue = true
 			continue
 		}
-
 		// Update the status
-		simulation.Status.ServicesStatus[name] = microsimv1alpha1.ServiceStatus{
+		simulation.Status.Services[name] = microsimv1alpha1.ServiceStatus{
 			Endpoint:  fmt.Sprintf("http://%s.svc.%s/", name, simulation.ObjectMeta.Namespace),
 			Language:  service.Language,
 			Framework: service.Framework,
@@ -111,9 +110,16 @@ func (r *SimulationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name string, service microsimv1alpha1.ServiceSpec) error{
+func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name string, service microsimv1alpha1.ServiceSpec) error {
 	logger := log.FromContext(ctx)
 	simulation := ctx.Value("simulation").(microsimv1alpha1.Simulation)
+
+	labels := map[string]string{
+		"app.kubernetes.io/instance":   name,
+		"app.kubernetes.io/part-of":    simulation.ObjectMeta.Name,
+		"app.kubernetes.io/managed-by": "microsim-simulation",
+		"app.kubernetes.io/created-by": "microsim",
+	}
 
 	deployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -121,20 +127,23 @@ func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name str
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
 			Namespace: simulation.ObjectMeta.Namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/instance":   name,
-				"app.kubernetes.io/part-of":    simulation.Spec.Name,
-				"app.kubernetes.io/managed-by": "microsim-simulation",
-				"app.kubernetes.io/created-by": "microsim",
-			},
+			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
 			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
-						Image: fmt.Sprintf("ghcr.io/mrsupiri/microsim:%s-%s", service.Language, service.Framework),
+						Name:            "service",
+						Image:           fmt.Sprintf("ghcr.io/mrsupiri/microsim:%s-%s", service.Language, service.Framework),
+						ImagePullPolicy: v1.PullIfNotPresent,
 						Env: []v1.EnvVar{
 							{
 								Name:  "SERVICE_NAME",
@@ -143,7 +152,7 @@ func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name str
 						},
 						Ports: []v1.ContainerPort{{
 							Name:          "http",
-							ContainerPort: 80,
+							ContainerPort: 8080,
 							Protocol:      v1.ProtocolTCP,
 						}},
 					}},
@@ -158,23 +167,19 @@ func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name str
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
 			Namespace: simulation.ObjectMeta.Namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/instance":   name,
-				"app.kubernetes.io/part-of":    simulation.Spec.Name,
-				"app.kubernetes.io/managed-by": "microsim-simulation",
-				"app.kubernetes.io/created-by": "microsim",
-			},
+			Labels:    labels,
 		},
-		Spec:       v1.ServiceSpec{
+		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeClusterIP,
 			Ports: []v1.ServicePort{{
 				Name:       "http",
 				Protocol:   v1.ProtocolTCP,
 				Port:       80,
-				TargetPort: intstr.IntOrString{StrVal: "http"},
+				TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: "http"},
 			}},
+			Selector: labels,
 		},
 	}
 
@@ -225,7 +230,7 @@ func (r *SimulationReconciler) CleanUpResources(ctx context.Context, name string
 }
 
 func IgnoreAlreadyExist(err error) error {
-	if apierrors.IsAlreadyExists(err){
+	if apierrors.IsAlreadyExists(err) {
 		return nil
 	}
 	return err
