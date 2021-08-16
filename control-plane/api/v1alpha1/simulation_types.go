@@ -24,8 +24,10 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type ServiceSpec struct {
+	// +optional
+	Name      string `json:"name"`
+	Language  string `json:"language"`
 	Framework string `json:"framework"`
-	Version   string `json:"version"`
 }
 
 type ServiceStatus struct {
@@ -36,12 +38,13 @@ type ServiceStatus struct {
 
 // SimulationSpec defines the desired state of Simulation
 type SimulationSpec struct {
+	Name     string        `json:"name"`
 	Services []ServiceSpec `json:"services"`
 }
 
 // SimulationStatus defines the observed state of Simulation
 type SimulationStatus struct {
-	ServicesStatus []ServiceStatus `json:"services_status"`
+	ServicesStatus map[string]ServiceStatus `json:"services_status"`
 }
 
 //+kubebuilder:object:root=true

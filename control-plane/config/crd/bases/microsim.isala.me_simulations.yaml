@@ -36,26 +36,31 @@ spec:
           spec:
             description: SimulationSpec defines the desired state of Simulation
             properties:
+              name:
+                type: string
               services:
                 items:
                   properties:
                     framework:
                       type: string
-                    version:
+                    language:
+                      type: string
+                    name:
                       type: string
                   required:
                   - framework
-                  - version
+                  - language
                   type: object
                 type: array
             required:
+            - name
             - services
             type: object
           status:
             description: SimulationStatus defines the observed state of Simulation
             properties:
               services_status:
-                items:
+                additionalProperties:
                   properties:
                     endpoint:
                       type: string
@@ -68,7 +73,7 @@ spec:
                   - name
                   - uid
                   type: object
-                type: array
+                type: object
             required:
             - services_status
             type: object

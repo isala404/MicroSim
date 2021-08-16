@@ -18,7 +18,8 @@ package controllers
 
 import (
 	"context"
-
+	v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +37,8 @@ type SimulationReconciler struct {
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=pods;services,verbs=get;watch;list;create;delete
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -47,9 +50,15 @@ type SimulationReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// your logic here
+	logger.Info("Reconciling")
+
+	var simulation microsimv1alpha1.Simulation
+	if err := r.Get(ctx, req.NamespacedName, &simulation); err != nil {
+		// TODO: Cleanup
+		return ctrl.Result{Requeue: false}, client.IgnoreNotFound(err)
+	}
 
 	return ctrl.Result{}, nil
 }
