@@ -31,8 +31,11 @@ type Response struct {
 
 func main() {
 	flag.StringVar(&serviceName, "service-name", "Undefined", "The name set on the response")
-	flag.StringVar(&port, "addr", ":8080", "The address the web server will bind to")
+	flag.StringVar(&port, "addr", ":80", "The address the web server will bind to")
 	flag.Parse()
+
+	// override of if ENV is present
+	serviceName = getEnv("SERVICE_NAME", serviceName)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handler).Methods(http.MethodPost)

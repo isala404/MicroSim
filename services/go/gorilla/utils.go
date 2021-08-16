@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -53,4 +54,12 @@ func callNextDestination(payload json.RawMessage) (*Response, error) {
 		return response, err
 	}
 	return response, nil
+}
+
+// https://stackoverflow.com/a/40326580
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
