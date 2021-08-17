@@ -95,9 +95,6 @@ spec:
                       - after
                       - before
                       type: object
-                    payload:
-                      items: {}
-                      type: array
                     probability:
                       maximum: 100
                       minimum: 0
@@ -122,38 +119,15 @@ spec:
             description: LoadGeneratorStatus defines the observed state of LoadGenerator
             properties:
               averageResponseTime:
-                description: A Duration represents the elapsed time between two instants
-                  as an int64 nanosecond count. The representation limits the largest
-                  representable duration to approximately 290 years.
+                description: 'TODO: Fix this Responses           []Response    `json:"responses"`'
                 format: int64
                 type: integer
               doneRequests:
                 minimum: 0
                 type: integer
-              responses:
-                items:
-                  properties:
-                    address:
-                      type: string
-                    errors:
-                      items:
-                        type: string
-                      type: array
-                    response:
-                      items: {}
-                      type: array
-                    service:
-                      type: string
-                  required:
-                  - address
-                  - errors
-                  - service
-                  type: object
-                type: array
             required:
             - averageResponseTime
             - doneRequests
-            - responses
             type: object
         type: object
     served: true

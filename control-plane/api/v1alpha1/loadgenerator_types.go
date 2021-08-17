@@ -44,14 +44,17 @@ type Payload struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	Probability int `json:"probability"`
+
+	// TODO: Fix this
 	// +optional
-	Payload []Payload `json:"payload,omitempty"`
+	// +nullable
+	//Payload []Payload `json:"payload,omitempty"`
 }
 
 type Response struct {
-	Service  string    `json:"service"`
-	Address  string    `json:"address"`
-	Errors   []string  `json:"errors"`
+	Service string   `json:"service"`
+	Address string   `json:"address"`
+	Errors  []string `json:"errors"`
 	// +optional
 	Response []Response `json:"response"`
 }
@@ -69,8 +72,9 @@ type LoadGeneratorSpec struct {
 // LoadGeneratorStatus defines the observed state of LoadGenerator
 type LoadGeneratorStatus struct {
 	// +kubebuilder:validation:Minimum=0
-	DoneRequests        int           `json:"doneRequests"`
-	Responses           []Response    `json:"responses"`
+	DoneRequests int `json:"doneRequests"`
+	// TODO: Fix this
+	//Responses           []Response    `json:"responses"`
 	AverageResponseTime time.Duration `json:"averageResponseTime"`
 }
 

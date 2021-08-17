@@ -3,5 +3,8 @@ kind: Simulation
 metadata:
   name: simulation-sample
 spec:
-  # Add fields here
-  foo: bar
+  name:
+  services:
+    gorila_1:
+      language: go
+      framework: gorilla

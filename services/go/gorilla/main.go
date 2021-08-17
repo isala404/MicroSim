@@ -34,13 +34,16 @@ func main() {
 	flag.StringVar(&port, "addr", ":8080", "The address the web server will bind to")
 	flag.Parse()
 
+	// override of if ENV is present
+	serviceName = getEnv("SERVICE_NAME", serviceName)
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", handler).Methods(http.MethodPost)
 	r.Use(mux.CORSMethodMiddleware(r))
 	r.Use(loggingMiddleware)
 
 	fmt.Printf("service: %s, started on %s\n", serviceName, port)
-	_ = http.ListenAndServe(port, r)
+	panic(http.ListenAndServe(port, r))
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
