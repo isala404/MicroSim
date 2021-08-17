@@ -37,97 +37,58 @@ spec:
             description: LoadGeneratorSpec defines the desired state of LoadGenerator
             properties:
               betweenDelay:
-                type: integer
+                type: string
+              request:
+                type: string
               requestCount:
+                minimum: 0
+                nullable: true
                 type: integer
-              routes:
-                items:
-                  properties:
-                    designation:
-                      type: string
-                    faults:
-                      properties:
-                        after:
-                          items:
-                            properties:
-                              args:
-                                description: RawMessage is a raw encoded JSON value.
-                                  It implements Marshaler and Unmarshaler and can
-                                  be used to delay JSON decoding or precompute a JSON
-                                  encoding.
-                                format: byte
-                                type: string
-                              probability:
-                                maximum: 100
-                                minimum: 0
-                                type: integer
-                              type:
-                                type: string
-                            required:
-                            - args
-                            - probability
-                            - type
-                            type: object
-                          type: array
-                        before:
-                          items:
-                            properties:
-                              args:
-                                description: RawMessage is a raw encoded JSON value.
-                                  It implements Marshaler and Unmarshaler and can
-                                  be used to delay JSON decoding or precompute a JSON
-                                  encoding.
-                                format: byte
-                                type: string
-                              probability:
-                                maximum: 100
-                                minimum: 0
-                                type: integer
-                              type:
-                                type: string
-                            required:
-                            - args
-                            - probability
-                            - type
-                            type: object
-                          type: array
-                      required:
-                      - after
-                      - before
-                      type: object
-                    probability:
-                      maximum: 100
-                      minimum: 0
-                      type: integer
-                  required:
-                  - designation
-                  - faults
-                  - probability
-                  type: object
-                type: array
+              simulationRef:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               timeout:
-                description: A Duration represents the elapsed time between two instants
-                  as an int64 nanosecond count. The representation limits the largest
-                  representable duration to approximately 290 years.
-                format: int64
-                type: integer
+                nullable: true
+                type: string
             required:
             - betweenDelay
-            - routes
+            - request
+            - requestCount
+            - simulationRef
+            - timeout
             type: object
           status:
             description: LoadGeneratorStatus defines the observed state of LoadGenerator
             properties:
               averageResponseTime:
-                description: 'TODO: Fix this Responses           []Response    `json:"responses"`'
-                format: int64
-                type: integer
+                type: string
               doneRequests:
+                default: 0
                 minimum: 0
                 type: integer
+              responses:
+                items:
+                  properties:
+                    request:
+                      type: string
+                    response:
+                      type: string
+                  required:
+                  - request
+                  - response
+                  type: object
+                type: array
             required:
             - averageResponseTime
             - doneRequests
+            - responses
             type: object
         type: object
     served: true

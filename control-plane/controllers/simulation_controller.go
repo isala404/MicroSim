@@ -75,7 +75,7 @@ func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	requeue := false
 	for name, service := range simulation.Spec.Services {
-		name = fmt.Sprintf("%s-%s", strings.Replace(name, "_", "-", -1), simulation.ObjectMeta.UID[:8])
+		name = formatServiceName(name, simulation)
 		// Check if the service is already deployed
 		if _, ok := simulation.Status.Services[name]; ok {
 			continue
@@ -234,4 +234,8 @@ func IgnoreAlreadyExist(err error) error {
 		return nil
 	}
 	return err
+}
+
+func formatServiceName(name string, simulation microsimv1alpha1.Simulation) string {
+	return fmt.Sprintf("%s-%s", strings.Replace(name, "_", "-", -1), simulation.ObjectMeta.UID[:8])
 }

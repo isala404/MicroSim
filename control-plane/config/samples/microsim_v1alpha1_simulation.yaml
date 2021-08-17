@@ -5,6 +5,15 @@ metadata:
 spec:
   name:
   services:
-    gorila_1:
+    service_1:
+      language: go
+      framework: gorilla
+    service_2:
+      language: go
+      framework: gorilla
+    service_3:
+      language: go
+      framework: gorilla
+    service_4:
       language: go
       framework: gorilla

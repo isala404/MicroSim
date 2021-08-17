@@ -17,65 +17,41 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type FaultType struct {
-	Type string          `json:"type"`
-	Args json.RawMessage `json:"args"`
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=100
-	Probability int `json:"probability"`
+type Responses struct {
+	Request  string `json:"request"`
+	Response string `json:"response"`
 }
 
-type Faults struct {
-	Before []FaultType `json:"before"`
-	After  []FaultType `json:"after"`
-}
-
-type Payload struct {
-	Designation string `json:"designation"`
-	Faults      Faults `json:"faults"`
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=100
-	Probability int `json:"probability"`
-
-	// TODO: Fix this
-	// +optional
-	// +nullable
-	//Payload []Payload `json:"payload,omitempty"`
-}
-
-type Response struct {
-	Service string   `json:"service"`
-	Address string   `json:"address"`
-	Errors  []string `json:"errors"`
-	// +optional
-	Response []Response `json:"response"`
+type SimulationRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 // LoadGeneratorSpec defines the desired state of LoadGenerator
 type LoadGeneratorSpec struct {
-	Routes []Payload `json:"routes"`
-	// +optional
-	RequestCount int `json:"requestCount"`
-	// +optional
-	Timeout      time.Duration `json:"timeout"`
-	BetweenDelay int           `json:"betweenDelay"`
+	Request       string        `json:"request"`
+	SimulationRef SimulationRef `json:"simulationRef"`
+	// +nullable
+	// +kubebuilder:validation:Minimum=0
+	RequestCount *int `json:"requestCount"`
+	// +nullable
+	Timeout      *metav1.Duration `json:"timeout"`
+	BetweenDelay metav1.Duration  `json:"betweenDelay"`
 }
 
 // LoadGeneratorStatus defines the observed state of LoadGenerator
 type LoadGeneratorStatus struct {
 	// +kubebuilder:validation:Minimum=0
-	DoneRequests int `json:"doneRequests"`
-	// TODO: Fix this
-	//Responses           []Response    `json:"responses"`
-	AverageResponseTime time.Duration `json:"averageResponseTime"`
+	// +kubebuilder:default=0
+	DoneRequests        int             `json:"doneRequests"`
+	Responses           []Responses     `json:"responses"`
+	AverageResponseTime metav1.Duration `json:"averageResponseTime"`
 }
 
 //+kubebuilder:object:root=true
