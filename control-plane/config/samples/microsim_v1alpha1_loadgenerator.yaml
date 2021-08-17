@@ -3,5 +3,81 @@ kind: LoadGenerator
 metadata:
   name: loadgenerator-sample
 spec:
-  # Add fields here
-  foo: bar
+  request: |
+    {
+      "designation": "service_1",
+      "faults": {
+        "before": [
+          {
+            "type": "latency",
+            "args": {
+              "delay": 600
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "memory-leak",
+            "args": {
+              "size": 250,
+              "duration": 10000
+            }
+          }
+        ]
+      },
+      "probability": 100,
+      "routes": [
+        {
+          "designation": "service_2",
+          "probability": 50,
+          "faults": {
+            "before": [],
+            "after": [
+              {
+                "type": "latency",
+                "args": {
+                  "delay": 600
+                }
+              }
+            ]
+          },
+          "routes": [
+            {
+              "designation": "service_4",
+              "probability": 70,
+              "faults": {
+                "before": [
+                  {
+                    "type": "latency",
+                    "args": {
+                      "delay": 200
+                    }
+                  }
+                ],
+                "after": []
+              }
+            }
+          ]
+        },
+        {
+          "designation": "service_3",
+          "probability": 50,
+          "faults": {
+            "before": [
+              {
+                "type": "latency",
+                "args": {
+                  "delay": 1000
+                }
+              }
+            ],
+            "after": []
+          }
+        }
+      ]
+    }
+  simulationRef:
+    name: simulation-sample
+    namespace: default
+  requestCount: 10
+  betweenDelay: 20s
