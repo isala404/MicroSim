@@ -113,6 +113,38 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
 ```
 </details>
 
+<details>
+  <summary>Click to view sample response!</summary>
+
+```json
+{
+  "service": "service_1",
+  "address": "http://localhost:8081/",
+  "errors": [],
+  "response": [
+    {
+      "service": "service_2",
+      "address": "http://localhost:8082/",
+      "errors": [],
+      "response": [
+        {
+          "service": "service_4",
+          "address": "http://localhost:8084/",
+          "errors": [],
+          "response": []
+        }
+      ]
+    },
+    {
+      "service": "service_3",
+      "address": "http://localhost:8083/",
+      "errors": [],
+      "response": []
+    }
+  ]
+}
+```
+</details>
 
 ### Description
 
@@ -121,12 +153,10 @@ Client will request send this request to control plane which looks like the abov
 - Then control plane will overwrite all the designation with correct ClusterIPs.
     - Then the request will be forwarded to `service_1`.
     - `service_1` will first look at the `fatuls["before"]` sections in the request and execute those faults in order.
-    - Then the payload part of the request taken out and send to send server.
-        - `service_2` will also look at the `fatuls["before"]` first.
-        - Since it's empty it will then try to forward the payload to another service.
-        - Because it's also empty, it will execute faults in `fatuls["after"]` in order.
-        - After those were done, `service_2` will return, `{'error' : null}` with 200 status code to the `service_1`
-          request.
-    - Then `service_2` will execute faults in the `fatuls["after"]` section.
-    - Finally, it will also return `{'error' : null}` with 200 status code to the control plane request.
-- This request will take minimum of 1000ms to complete.
+    - Then the routes part of the request will be taken out.
+      - Then for `route` in each route will get called with the content of the `route`
+        - On each child service will do the same till it hit the `route` with empty routes list
+        - Then it will resolve from last one to the start. 
+    - When all the child services resolve `service_1` will execute `fatuls["after"]`
+    - Finally, it will also return a response like shown above with 200 status code to the control plane request.
+- This request will take minimum of 2400ms to complete since all the requests are queued sequentially.
