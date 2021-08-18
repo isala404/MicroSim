@@ -13,20 +13,20 @@ import (
 var serviceName string
 var port string
 
-type Payload struct {
+type Route struct {
 	Designation string `json:"designation,omitempty"`
 	Faults      struct {
 		Before faults.Faults `json:"before,omitempty"`
 		After  faults.Faults `json:"after,omitempty"`
-	} `json:"faults,omitempty"`
-	Payload *json.RawMessage `json:"payload,omitempty"`
+	} `json:"faults"`
+	Routes []json.RawMessage `json:"routes"`
 }
 
 type Response struct {
-	Service  string    `json:"service"`
-	Address  string    `json:"address"`
-	Errors   []string  `json:"errors"`
-	Response *Response `json:"response"`
+	Service  string      `json:"service"`
+	Address  string      `json:"address"`
+	Errors   []string    `json:"errors"`
+	Response []*Response `json:"response"`
 }
 
 func main() {
@@ -47,8 +47,8 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	var payload Payload
-	res := Response{Service: serviceName, Errors: []string{}}
+	var payload Route
+	res := Response{Service: serviceName, Errors: []string{}, Response: []*Response{}}
 
 	w.Header().Set("content-type", "application/json")
 
@@ -70,15 +70,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	res.Response = make([]*Response, len(payload.Routes))
 	// Forward the request to next service if the destination is defined
-	if payload.Payload != nil {
-		var err error
-		if res.Response, err = callNextDestination(*payload.Payload); err != nil {
+	for i, route := range payload.Routes {
+		destRes, err := callNextDestination(route)
+		if err != nil {
 			res.Errors = append(res.Errors, err.Error())
 			log.Println("error while forwarding request", err)
 		}
+		res.Response[i] = destRes
 	}
-
 	// Run post faults
 	for _, fault := range payload.Faults.After {
 		if err := fault.Run(); err != nil {

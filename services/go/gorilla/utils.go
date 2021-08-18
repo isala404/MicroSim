@@ -32,14 +32,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 // callNextDestination get the payload out ouf the request partially decoded it and send the raw data next Destination
-func callNextDestination(payload json.RawMessage) (*Response, error) {
-	var decodedPayload Payload
-	if err := json.Unmarshal(payload, &decodedPayload); err != nil {
+func callNextDestination(route json.RawMessage) (*Response, error) {
+	var decodedPayload Route
+	if err := json.Unmarshal(route, &decodedPayload); err != nil {
 		return nil, err
 	}
 
 	var response *Response
-	reqBody, err := json.Marshal(payload)
+	reqBody, err := json.Marshal(route)
 	if err != nil {
 		return response, err
 	}
