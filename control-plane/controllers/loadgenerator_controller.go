@@ -19,6 +19,8 @@ package controllers
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -46,6 +48,7 @@ type LoadGeneratorReconciler struct {
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators/finalizers,verbs=update
+//+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -145,36 +148,43 @@ func overwriteDesignations(ctx context.Context, route microsimv1alpha1.Route) mi
 func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route microsimv1alpha1.Route) error {
 	logger := log.FromContext(ctx)
 	loadGenerator := ctx.Value("loadgenerator").(microsimv1alpha1.LoadGenerator)
-	startedTime := time.Now()
 
-	logger.V(1).Info("creating the request", "designation", route.Designation)
+	for i, r2 := range route.Routes {
+		logger.V(1).Info(fmt.Sprintf("sending %d request", i), "designation", route.Designation)
+		startedTime := time.Now()
+		reqBody, err := json.Marshal(r2)
+		if err != nil {
+			return err
+		}
 
-	reqBody, err := json.Marshal(route.Routes)
-	if err != nil {
-		return err
+		resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		buf, err := ioutil.ReadAll(resp.Body)
+
+		if err != nil {
+			return err
+		}
+
+		// Store only unique requests and responses
+		reqRespHash := GetMD5Hash(append(buf, reqBody...))
+
+		if loadGenerator.Status.Responses == nil {
+			loadGenerator.Status.Responses = make(map[string]microsimv1alpha1.Responses)
+		}
+
+		loadGenerator.Status.Responses[reqRespHash] = microsimv1alpha1.Responses{
+			Response: string(buf),
+			Request:  string(reqBody),
+		}
+
+		avg := time.Duration(startedTime.Add(loadGenerator.Status.AverageResponseTime.Duration).Second()/2) * time.Second
+		loadGenerator.Status.DoneRequests += 1
+		loadGenerator.Status.AverageResponseTime = metav1.Duration{Duration: avg}
 	}
-
-	resp, err := http.Post("http://localhost:9090/", "application/json", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	buf, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return err
-	}
-
-	// TODO: make this sub resource
-	loadGenerator.Status.Responses = append(loadGenerator.Status.Responses, microsimv1alpha1.Responses{
-		Response: string(buf),
-		Request:  string(reqBody),
-	})
-
-	avg := time.Duration(startedTime.Add(loadGenerator.Status.AverageResponseTime.Duration).Second()/2) * time.Second
-	loadGenerator.Status.DoneRequests += 1
-	loadGenerator.Status.AverageResponseTime = metav1.Duration{Duration: avg}
 
 	if err := r.Status().Update(ctx, &loadGenerator); err != nil {
 		logger.V(-1).Info("failed to update load generator status")
@@ -182,4 +192,9 @@ func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route micr
 	}
 
 	return nil
+}
+
+func GetMD5Hash(input []byte) string {
+	hash := md5.Sum(input)
+	return hex.EncodeToString(hash[:])
 }

@@ -59,11 +59,9 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
       }
     ]
   },
-  "probability": 100,
   "routes": [
     {
       "designation": "service_2",
-      "probability": 50,
       "faults": {
         "before": [],
         "after": [
@@ -78,7 +76,6 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
       "routes": [
         {
           "designation": "service_4",
-          "probability": 70,
           "faults": {
             "before": [
               {
@@ -95,7 +92,6 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
     },
     {
       "designation": "service_3",
-      "probability": 50,
       "faults": {
         "before": [
           {

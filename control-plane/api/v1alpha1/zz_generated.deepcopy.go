@@ -116,8 +116,10 @@ func (in *LoadGeneratorStatus) DeepCopyInto(out *LoadGeneratorStatus) {
 	*out = *in
 	if in.Responses != nil {
 		in, out := &in.Responses, &out.Responses
-		*out = make([]Responses, len(*in))
-		copy(*out, *in)
+		*out = make(map[string]Responses, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	out.AverageResponseTime = in.AverageResponseTime
 }

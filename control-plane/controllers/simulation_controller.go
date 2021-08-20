@@ -41,8 +41,8 @@ type SimulationReconciler struct {
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods;services,verbs=get;watch;list;create;delete
-//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list
+//+kubebuilder:rbac:groups="",resources=services,verbs=get;watch;list;create;delete
+//+kubebuilder:rbac:groups="apps",resources=deployments,verbs=get;watch;list;create;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -89,7 +89,7 @@ func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 		// Update the status
 		simulation.Status.Services[name] = microsimv1alpha1.ServiceStatus{
-			Endpoint:  fmt.Sprintf("http://%s.svc.%s/", name, simulation.ObjectMeta.Namespace),
+			Endpoint:  fmt.Sprintf("http://%s.%s.svc/", name, simulation.ObjectMeta.Namespace),
 			Language:  service.Language,
 			Framework: service.Framework,
 		}

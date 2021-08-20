@@ -40,7 +40,7 @@ type LoadGeneratorSpec struct {
 	// +nullable
 	// +kubebuilder:validation:Minimum=0
 	RequestCount *int `json:"requestCount"`
-	// +nullable
+	// +optional
 	Timeout      *metav1.Duration `json:"timeout"`
 	BetweenDelay metav1.Duration  `json:"betweenDelay"`
 }
@@ -49,9 +49,9 @@ type LoadGeneratorSpec struct {
 type LoadGeneratorStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=0
-	DoneRequests        int             `json:"doneRequests"`
-	Responses           []Responses     `json:"responses"`
-	AverageResponseTime metav1.Duration `json:"averageResponseTime"`
+	DoneRequests        int                  `json:"doneRequests"`
+	Responses           map[string]Responses `json:"responses"`
+	AverageResponseTime metav1.Duration      `json:"averageResponseTime"`
 }
 
 //+kubebuilder:object:root=true

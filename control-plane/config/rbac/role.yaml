@@ -16,15 +16,17 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
+  - services
   verbs:
+  - create
+  - delete
   - get
   - list
+  - watch
 - apiGroups:
-  - ""
+  - apps
   resources:
-  - pods
-  - services
+  - deployments
   verbs:
   - create
   - delete
