@@ -133,12 +133,10 @@ func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.
 	}
 
 	// Merge the responses
-	var requests int
 	var responseTime time.Duration
 	responses := make(map[string]microsimv1alpha1.Responses)
 	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
 		res := <-results
-		requests += 1
 		responseTime += res.ResponseTimes
 		for s, m := range res.Response {
 			responses[s] = m
@@ -152,7 +150,7 @@ func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.
 		return
 	}
 
-	newLoadGenerator.Status.DoneRequests += requests
+	newLoadGenerator.Status.DoneRequests += 1
 	newLoadGenerator.Status.TotalResponseTime.Duration += responseTime
 	if newLoadGenerator.Status.Responses == nil {
 		newLoadGenerator.Status.Responses = responses
