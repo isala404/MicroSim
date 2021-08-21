@@ -38,6 +38,9 @@ spec:
             properties:
               betweenDelay:
                 type: string
+              replicas:
+                default: 1
+                type: integer
               request:
                 type: string
               requestCount:
@@ -65,11 +68,11 @@ spec:
           status:
             description: LoadGeneratorStatus defines the observed state of LoadGenerator
             properties:
-              averageResponseTime:
-                type: string
               doneRequests:
                 default: 0
                 minimum: 0
+                type: integer
+              replicas:
                 type: integer
               responses:
                 additionalProperties:
@@ -83,15 +86,21 @@ spec:
                   - response
                   type: object
                 type: object
+              totalResponseTime:
+                type: string
             required:
-            - averageResponseTime
             - doneRequests
+            - replicas
             - responses
+            - totalResponseTime
             type: object
         type: object
     served: true
     storage: true
     subresources:
+      scale:
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
       status: {}
 status:
   acceptedNames:

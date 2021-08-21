@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"net/http"
@@ -45,20 +44,33 @@ type LoadGeneratorReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+type requestStatus struct {
+	Response      map[string]microsimv1alpha1.Responses
+	ResponseTimes time.Duration
+}
+
+func eventFilter() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			// Ignore updates to CR status in which case metadata.Generation does not change
+			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
+		},
+	}
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *LoadGeneratorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&microsimv1alpha1.LoadGenerator{}).
+		WithEventFilter(eventFilter()).
+		Complete(r)
+}
+
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=loadgenerators/finalizers,verbs=update
 //+kubebuilder:rbac:groups=microsim.isala.me,resources=simulations,verbs=get;list;watch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the LoadGenerator object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *LoadGeneratorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -79,11 +91,6 @@ func (r *LoadGeneratorReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 	ctx = context.WithValue(ctx, "simulation", simulation)
 
-	var payload microsimv1alpha1.Route
-	if err := json.Unmarshal([]byte(loadGenerator.Spec.Request), &payload); err != nil {
-		logger.Error(err, "error while decoding request spec")
-	}
-
 	// Stop if the request count is met
 	if loadGenerator.Spec.RequestCount != nil {
 		if loadGenerator.Status.DoneRequests >= *loadGenerator.Spec.RequestCount {
@@ -101,30 +108,112 @@ func (r *LoadGeneratorReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
+	var payload microsimv1alpha1.Route
+	if err := json.Unmarshal([]byte(loadGenerator.Spec.Request), &payload); err != nil {
+		logger.Error(err, "error while decoding request spec")
+	}
 	payload = overwriteDesignations(ctx, payload)
 
-	if err := r.forwardRequest(ctx, payload); err != nil {
-		return ctrl.Result{}, err
-	}
+	// Send all the requests in background thread
+	// This is done because some request may take 10+ seconds and that value will be added spec.delayBetween
+	go r.processRequests(ctx, req, payload)
 
 	logger.V(1).Info(fmt.Sprintf("requeuing in %s", loadGenerator.Spec.BetweenDelay.Duration))
 	return ctrl.Result{RequeueAfter: loadGenerator.Spec.BetweenDelay.Duration}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *LoadGeneratorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&microsimv1alpha1.LoadGenerator{}).
-		WithEventFilter(eventFilter()).
-		Complete(r)
+func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.Request, payload microsimv1alpha1.Route) {
+	logger := log.FromContext(ctx)
+	loadGenerator := ctx.Value("loadgenerator").(microsimv1alpha1.LoadGenerator)
+
+	results := make(chan *requestStatus, loadGenerator.Spec.Replicas)
+	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
+		// Run this on the background
+		go r.forwardRequest(ctx, payload, results)
+	}
+
+	// Merge the responses
+	var responseTime time.Duration
+	responses := make(map[string]microsimv1alpha1.Responses)
+	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
+		res := <-results
+		responseTime += res.ResponseTimes
+		for s, m := range res.Response {
+			responses[s] = m
+		}
+	}
+
+	// Fetch new status because one we have might be outdated
+	var newLoadGenerator microsimv1alpha1.LoadGenerator
+	if err := r.Get(ctx, req.NamespacedName, &newLoadGenerator); err != nil {
+		logger.Error(err, "failed fetch load generator", "namespacedName", req.NamespacedName)
+		return
+	}
+
+	newLoadGenerator.Status.DoneRequests += 1
+	newLoadGenerator.Status.TotalResponseTime.Duration += responseTime
+	if newLoadGenerator.Status.Responses == nil {
+		newLoadGenerator.Status.Responses = responses
+	} else {
+		for s, m := range responses {
+			newLoadGenerator.Status.Responses[s] = m
+		}
+	}
+
+	// Coz why not
+	newLoadGenerator.Status.Replicas = newLoadGenerator.Spec.Replicas
+
+	// Update the status
+	// State here is only should be to get rough idea
+	// If a race condition was met this update will be ignored
+	if err := r.Status().Update(ctx, &newLoadGenerator); err != nil {
+		logger.Error(err, "failed to update load generator status")
+	}
+
 }
 
-func eventFilter() predicate.Predicate {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			// Ignore updates to CR status in which case metadata.Generation does not change
-			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
-		},
+func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route microsimv1alpha1.Route, results chan *requestStatus) {
+	logger := log.FromContext(ctx)
+	responses := make(map[string]microsimv1alpha1.Responses)
+	startedTime := time.Now()
+
+	for i, r2 := range route.Routes {
+		logger.V(1).Info(fmt.Sprintf("sending %d request", i), "designation", route.Designation)
+		reqBody, err := json.Marshal(r2)
+		if err != nil {
+			logger.Error(err, fmt.Sprintf("failed encoded request route #%d", i), "route", r2)
+			results <- nil
+			return
+		}
+
+		resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
+		if err != nil {
+			logger.Error(err, "failed send the request to designation", "designation", route.Designation)
+			results <- nil
+			return
+		}
+		defer resp.Body.Close()
+
+		buf, err := ioutil.ReadAll(resp.Body)
+
+		if err != nil {
+			logger.Error(err, fmt.Sprintf("failed decoded response for route #%d", i), "route", r2)
+			results <- nil
+			return
+		}
+
+		// Store only unique requests and responses
+		reqRespHash := GetMD5Hash(append(buf, reqBody...))
+
+		responses[reqRespHash] = microsimv1alpha1.Responses{
+			Response: string(buf),
+			Request:  string(reqBody),
+		}
+	}
+
+	results <- &requestStatus{
+		Response:      responses,
+		ResponseTimes: time.Now().Sub(startedTime),
 	}
 }
 
@@ -143,55 +232,6 @@ func overwriteDesignations(ctx context.Context, route microsimv1alpha1.Route) mi
 		route.Routes[i] = overwriteDesignations(ctx, p)
 	}
 	return route
-}
-
-func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route microsimv1alpha1.Route) error {
-	logger := log.FromContext(ctx)
-	loadGenerator := ctx.Value("loadgenerator").(microsimv1alpha1.LoadGenerator)
-
-	for i, r2 := range route.Routes {
-		logger.V(1).Info(fmt.Sprintf("sending %d request", i), "designation", route.Designation)
-		startedTime := time.Now()
-		reqBody, err := json.Marshal(r2)
-		if err != nil {
-			return err
-		}
-
-		resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		buf, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			return err
-		}
-
-		// Store only unique requests and responses
-		reqRespHash := GetMD5Hash(append(buf, reqBody...))
-
-		if loadGenerator.Status.Responses == nil {
-			loadGenerator.Status.Responses = make(map[string]microsimv1alpha1.Responses)
-		}
-
-		loadGenerator.Status.Responses[reqRespHash] = microsimv1alpha1.Responses{
-			Response: string(buf),
-			Request:  string(reqBody),
-		}
-
-		avg := time.Duration(startedTime.Add(loadGenerator.Status.AverageResponseTime.Duration).Second()/2) * time.Second
-		loadGenerator.Status.DoneRequests += 1
-		loadGenerator.Status.AverageResponseTime = metav1.Duration{Duration: avg}
-	}
-
-	if err := r.Status().Update(ctx, &loadGenerator); err != nil {
-		logger.V(-1).Info("failed to update load generator status")
-		return err
-	}
-
-	return nil
 }
 
 func GetMD5Hash(input []byte) string {

@@ -35,7 +35,10 @@ type SimulationRef struct {
 
 // LoadGeneratorSpec defines the desired state of LoadGenerator
 type LoadGeneratorSpec struct {
-	Request       string        `json:"request"`
+	Request string `json:"request"`
+	// +optional
+	// +kubebuilder:default=1
+	Replicas      int           `json:"replicas"`
 	SimulationRef SimulationRef `json:"simulationRef"`
 	// +nullable
 	// +kubebuilder:validation:Minimum=0
@@ -49,13 +52,15 @@ type LoadGeneratorSpec struct {
 type LoadGeneratorStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=0
-	DoneRequests        int                  `json:"doneRequests"`
-	Responses           map[string]Responses `json:"responses"`
-	AverageResponseTime metav1.Duration      `json:"averageResponseTime"`
+	DoneRequests      int                  `json:"doneRequests"`
+	Responses         map[string]Responses `json:"responses"`
+	TotalResponseTime metav1.Duration      `json:"totalResponseTime"`
+	Replicas          int                  `json:"replicas"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas
 
 // LoadGenerator is the Schema for the loadgenerators API
 type LoadGenerator struct {
