@@ -121,6 +121,11 @@ func (in *LoadGeneratorStatus) DeepCopyInto(out *LoadGeneratorStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.Payload != nil {
+		in, out := &in.Payload, &out.Payload
+		*out = new(Route)
+		(*in).DeepCopyInto(*out)
+	}
 	out.TotalResponseTime = in.TotalResponseTime
 }
 
