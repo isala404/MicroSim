@@ -52,12 +52,10 @@ type LoadGeneratorSpec struct {
 type LoadGeneratorStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=0
-	DoneRequests int                  `json:"doneRequests"`
-	Responses    map[string]Responses `json:"responses"`
-	// +optional
-	Payload           *Route          `json:"payload"`
-	TotalResponseTime metav1.Duration `json:"totalResponseTime"`
-	Replicas          int             `json:"replicas"`
+	DoneRequests      int                  `json:"doneRequests"`
+	Responses         map[string]Responses `json:"responses"`
+	TotalResponseTime metav1.Duration      `json:"totalResponseTime"`
+	Replicas          int                  `json:"replicas"`
 }
 
 //+kubebuilder:object:root=true

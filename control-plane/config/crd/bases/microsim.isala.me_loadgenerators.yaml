@@ -72,24 +72,6 @@ spec:
                 default: 0
                 minimum: 0
                 type: integer
-              payload:
-                properties:
-                  designation:
-                    type: string
-                  faults:
-                    description: RawMessage is a raw encoded JSON value. It implements
-                      Marshaler and Unmarshaler and can be used to delay JSON decoding
-                      or precompute a JSON encoding.
-                    format: byte
-                    type: string
-                  routes:
-                    items: {}
-                    type: array
-                required:
-                - designation
-                - faults
-                - routes
-                type: object
               replicas:
                 type: integer
               responses:

@@ -108,37 +108,34 @@ func (r *LoadGeneratorReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	if loadGenerator.Status.Payload == nil {
-		var payload microsimv1alpha1.Route
-		if err := json.Unmarshal([]byte(loadGenerator.Spec.Request), &payload); err != nil {
-			logger.Error(err, "error while decoding request spec")
-		}
-		payload = overwriteDesignations(ctx, payload)
-		loadGenerator.Status.Payload = &payload
+	var payload microsimv1alpha1.Route
+	if err := json.Unmarshal([]byte(loadGenerator.Spec.Request), &payload); err != nil {
+		logger.Error(err, "error while decoding request spec")
 	}
+	payload = overwriteDesignations(ctx, payload)
 
 	// Send all the requests in background thread
 	// This is done because some request may take 10+ seconds and that value will be added spec.delayBetween
-	go r.processRequests(ctx, req)
+	go r.processRequests(ctx, req, payload)
 
 	logger.V(1).Info(fmt.Sprintf("requeuing in %s", loadGenerator.Spec.BetweenDelay.Duration))
 	return ctrl.Result{RequeueAfter: loadGenerator.Spec.BetweenDelay.Duration}, nil
 }
 
-func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.Request) {
+func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.Request, payload microsimv1alpha1.Route) {
 	logger := log.FromContext(ctx)
 	loadGenerator := ctx.Value("loadgenerator").(microsimv1alpha1.LoadGenerator)
 
 	results := make(chan *requestStatus, loadGenerator.Spec.Replicas)
 	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
 		// Run this on the background
-		go r.forwardRequest(ctx, loadGenerator.Status.Payload, results)
+		go r.forwardRequest(ctx, payload, results)
 	}
 
 	// Merge the responses
 	var requests int
 	var responseTime time.Duration
-	var responses map[string]microsimv1alpha1.Responses
+	responses := make(map[string]microsimv1alpha1.Responses)
 	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
 		res := <-results
 		requests += 1
@@ -177,7 +174,7 @@ func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.
 
 }
 
-func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route *microsimv1alpha1.Route, results chan *requestStatus) {
+func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route microsimv1alpha1.Route, results chan *requestStatus) {
 	logger := log.FromContext(ctx)
 	responses := make(map[string]microsimv1alpha1.Responses)
 	startedTime := time.Now()
