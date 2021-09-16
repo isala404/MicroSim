@@ -9,6 +9,9 @@ class Fault:
     type: str
     args: Any
 
+    def run(self):
+        pass
+
 
 @dataclass_json
 @dataclass

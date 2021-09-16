@@ -1,10 +1,9 @@
 import argparse
-import json
 import os
 from flask import Flask, request
 from werkzeug.exceptions import abort
 from models import *
-from utils import call_next_destination
+from utils import call_next_destination, cast_and_execute
 
 parser = argparse.ArgumentParser()
 
@@ -37,6 +36,8 @@ def handler():
         res.address = payload.designation
 
         # Run fault faults
+        for fault in payload.faults.before:
+            cast_and_execute(fault)
 
         # Forward the request to next service if the destination is defined
         if payload.routes:
@@ -50,11 +51,13 @@ def handler():
                     res.response.append(None)
 
         # Run post faults
+        for fault in payload.faults.after:
+            cast_and_execute(fault)
 
         # Return the response to calling service
         return res.to_json()
-    except ZeroDivisionError as e:
-        abort(400, e)
+    except (AttributeError, KeyError) as e:
+        return {"error": str(e)}, 400
 
 
 if __name__ == '__main__':
