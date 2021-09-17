@@ -14,3 +14,5 @@
 # IDEs
 .idea/*
 .vscode/*
+**/.idea/*
+**/__pycache__/**
