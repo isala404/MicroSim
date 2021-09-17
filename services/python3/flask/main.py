@@ -1,7 +1,6 @@
 import argparse
 import os
 from flask import Flask, request
-from werkzeug.exceptions import abort
 from models import *
 from utils import call_next_destination, cast_and_execute
 
@@ -16,7 +15,12 @@ args = parser.parse_args()
 # override of if ENV is present
 args.service_name = os.getenv("SERVICE_NAME", args.service_name)
 
-app = Flask(__name__)
+app = Flask('service')
+
+
+@app.before_request
+def log_request_info():
+    app.logger.info(f'RemoteAddr:{request.remote_addr} Method:{request.method} Body:{request.get_json()}')
 
 
 @app.after_request
@@ -37,7 +41,9 @@ def handler():
 
         # Run fault faults
         for fault in payload.faults.before:
-            cast_and_execute(fault)
+            err = cast_and_execute(fault)
+            if err:
+                res.errors.append(err)
 
         # Forward the request to next service if the destination is defined
         if payload.routes:
@@ -46,13 +52,15 @@ def handler():
                     dest_res = call_next_destination(route)
                     res.response.append(dest_res)
                 except Exception as e:
-                    # print("\n\n\n", "ERROR", e, "\nRoute", route, )
+                    app.logger.exception("error while forwarding request")
                     res.errors.append(str(e))
                     res.response.append(None)
 
         # Run post faults
         for fault in payload.faults.after:
-            cast_and_execute(fault)
+            err = cast_and_execute(fault)
+            if err:
+                res.errors.append(err)
 
         # Return the response to calling service
         return res.to_json()
@@ -61,4 +69,4 @@ def handler():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=args.port)
+    app.run(host='0.0.0.0', port=args.port, debug=True)

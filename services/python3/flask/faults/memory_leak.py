@@ -2,9 +2,13 @@ import threading
 import time
 from models import Fault
 import gc
+import logging
+
+logger = logging.getLogger('service')
 
 
 def create_leak(size, duration):
+    logger.info(f"creating memory leak of {size}MB for {duration} seconds")
     leak = "a" * size * 1024 * 1024
     time.sleep(duration / 1000)
     del leak

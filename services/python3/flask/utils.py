@@ -14,6 +14,9 @@ def cast_and_execute(fault: Fault):
         "latency": Latency,
         "memory-leak": MemoryLeak,
     }
-
-    fault.__class__ = classes[fault.type]
-    fault.run()
+    try:
+        fault.__class__ = classes[fault.type]
+        fault.run()
+        return None
+    except KeyError:
+        return f"fault type {fault.type}, is not implemented"
