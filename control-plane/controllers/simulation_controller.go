@@ -142,7 +142,7 @@ func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name str
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:            "service",
-						Image:           fmt.Sprintf("ghcr.io/mrsupiri/microsim:%s-%s", service.Language, service.Framework),
+						Image:           fmt.Sprintf("ghcr.io/mrsupiri/microsim/service:%s-%s", service.Language, service.Framework),
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Env: []v1.EnvVar{
 							{

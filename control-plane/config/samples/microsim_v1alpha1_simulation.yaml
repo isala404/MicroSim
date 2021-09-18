@@ -12,8 +12,8 @@ spec:
       language: go
       framework: gorilla
     service_3:
-      language: go
-      framework: gorilla
+      language: python
+      framework: flask
     service_4:
-      language: go
-      framework: gorilla
+      language: python
+      framework: flask
