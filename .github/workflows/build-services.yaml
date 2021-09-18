@@ -1,0 +1,44 @@
+name: services
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: ghcr.io/mrsupiri/microsim/service
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  go-gorilla:
+    name: build gorilla/mux
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: services/go/gorilla
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker build -t $IMAGE_NAME:$GITHUB_JOB .
+      - run: docker push $IMAGE_NAME:$GITHUB_JOB
+  python-flask:
+    name: build flask
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: services/python3/flask
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker build -t $IMAGE_NAME:$GITHUB_JOB .
+      - run: docker push $IMAGE_NAME:$GITHUB_JOB
