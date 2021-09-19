@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
 )
@@ -56,18 +57,46 @@ func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var simulation microsimv1alpha1.Simulation
 	if err := r.Get(ctx, req.NamespacedName, &simulation); err != nil {
-		if apierrors.IsNotFound(err) {
-			if err := r.CleanUpResources(ctx, req.Name); client.IgnoreNotFound(err) != nil {
-				// TODO: write this to event log
-				return ctrl.Result{Requeue: true}, err
-			}
-		} else {
-			logger.Error(err, "failed to get the simulation")
-		}
 		return ctrl.Result{Requeue: false}, client.IgnoreNotFound(err)
 	}
 
 	ctx = context.WithValue(ctx, "simulation", simulation)
+
+	// name of our custom finalizer
+	finalizer := "simulations.microsim.isala.me/finalizer"
+
+	// examine DeletionTimestamp to determine if object is under deletion
+	if simulation.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !containsString(simulation.GetFinalizers(), finalizer) {
+			controllerutil.AddFinalizer(&simulation, finalizer)
+			if err := r.Update(ctx, &simulation); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil
+		}
+	} else {
+		// The object is being deleted
+		if containsString(simulation.GetFinalizers(), finalizer) {
+			// our finalizer is present, so lets handle any external dependency
+			if err := r.CleanUpResources(ctx, req.Name); err != nil {
+				// if fail to delete the external dependency here, return with error
+				// so that it can be retried
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(&simulation, finalizer)
+			if err := r.Update(ctx, &simulation); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
 
 	if len(simulation.Status.Services) == 0 {
 		simulation.Status.Services = map[string]microsimv1alpha1.ServiceStatus{}
@@ -107,6 +136,7 @@ func (r *SimulationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *SimulationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&microsimv1alpha1.Simulation{}).
+		WithEventFilter(eventFilter()).
 		Complete(r)
 }
 
@@ -186,11 +216,15 @@ func (r *SimulationReconciler) ProvisionIfNoExists(ctx context.Context, name str
 	if err := r.Create(ctx, &deployment); IgnoreAlreadyExist(err) != nil {
 		logger.Error(err, fmt.Sprintf("failed to create deployment %s", deployment.ObjectMeta.Name))
 		return err
+	} else {
+		logger.V(1).Info("created deployment", "name", deployment.GetName(), "uuid", deployment.GetUID())
 	}
 
 	if err := r.Create(ctx, &clusterIP); IgnoreAlreadyExist(err) != nil {
 		logger.Error(err, fmt.Sprintf("failed to create service %s", clusterIP.ObjectMeta.Name))
 		return err
+	} else {
+		logger.V(1).Info("created service", "name", clusterIP.GetName(), "uuid", clusterIP.GetUID())
 	}
 	return nil
 }
@@ -238,4 +272,13 @@ func IgnoreAlreadyExist(err error) error {
 
 func formatServiceName(name string, simulation microsimv1alpha1.Simulation) string {
 	return fmt.Sprintf("%s-%s", strings.Replace(name, "_", "-", -1), simulation.ObjectMeta.UID[:8])
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
