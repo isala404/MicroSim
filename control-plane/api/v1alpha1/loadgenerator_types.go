@@ -40,7 +40,7 @@ type LoadGeneratorSpec struct {
 	// +kubebuilder:default=1
 	Replicas      int           `json:"replicas"`
 	SimulationRef SimulationRef `json:"simulationRef"`
-	// +nullable
+	// +optional
 	// +kubebuilder:validation:Minimum=0
 	RequestCount *int `json:"requestCount"`
 	// +optional

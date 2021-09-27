@@ -45,7 +45,6 @@ spec:
                 type: string
               requestCount:
                 minimum: 0
-                nullable: true
                 type: integer
               simulationRef:
                 properties:
@@ -62,7 +61,6 @@ spec:
             required:
             - betweenDelay
             - request
-            - requestCount
             - simulationRef
             type: object
           status:

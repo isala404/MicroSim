@@ -76,4 +76,5 @@ spec:
     name: simulation-sample
     namespace: default
   requestCount: 10
+#  timeout: 15m
   betweenDelay: 20s
