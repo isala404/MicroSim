@@ -6,6 +6,7 @@ spec:
   request: |
     {
       "designation": "service_1",
+      "probability": 100,
       "faults": {
         "before": [
           {
@@ -28,6 +29,7 @@ spec:
       "routes": [
         {
           "designation": "service_2",
+          "probability": 50,
           "faults": {
             "before": [],
             "after": [
@@ -42,6 +44,7 @@ spec:
           "routes": [
             {
               "designation": "service_4",
+              "probability": 100,
               "faults": {
                 "before": [
                   {
@@ -58,6 +61,7 @@ spec:
         },
         {
           "designation": "service_3",
+          "probability": 100,
           "faults": {
             "before": [
               {
