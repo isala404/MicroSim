@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"math/rand"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -220,6 +221,7 @@ func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route micr
 func overwriteDesignations(ctx context.Context, route microsimv1alpha1.Route) microsimv1alpha1.Route {
 	logger := log.FromContext(ctx)
 	simulation := ctx.Value("simulation").(microsimv1alpha1.Simulation)
+	var newRoutes []microsimv1alpha1.Route
 
 	if !strings.HasPrefix(route.Designation, "http") {
 		if svc, ok := simulation.Status.Services[formatServiceName(route.Designation, simulation)]; ok {
@@ -228,9 +230,13 @@ func overwriteDesignations(ctx context.Context, route microsimv1alpha1.Route) mi
 			logger.V(-1).Info("service name was not found", "service name", route.Designation)
 		}
 	}
-	for i, p := range route.Routes {
-		route.Routes[i] = overwriteDesignations(ctx, p)
+
+	for _, p := range route.Routes {
+		if rand.Intn(100) <= route.Probability {
+			newRoutes = append(newRoutes, overwriteDesignations(ctx, p))
+		}
 	}
+	route.Routes = newRoutes
 	return route
 }
 

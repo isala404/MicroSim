@@ -13,6 +13,7 @@ type Response struct {
 // +kubebuilder:object:generate=false
 type Route struct {
 	Designation string          `json:"designation"`
+	Probability int             `json:"probability"`
 	Faults      json.RawMessage `json:"faults"`
 	Routes      []Route         `json:"routes"`
 }
