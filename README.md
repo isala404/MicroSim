@@ -17,6 +17,7 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
 ## Supported HTTP servers
 
 - [gorilla/mux](https://github.com/gorilla/mux)
+- [Flask](https://github.com/pallets/flask)
 
 ## Use cases
 
@@ -38,8 +39,9 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
   <summary>Click to view sample request!</summary>
 
 ```json
-{
+    {
   "designation": "service_1",
+  "probability": 100,
   "faults": {
     "before": [
       {
@@ -62,6 +64,7 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
   "routes": [
     {
       "designation": "service_2",
+      "probability": 50,
       "faults": {
         "before": [],
         "after": [
@@ -76,6 +79,7 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
       "routes": [
         {
           "designation": "service_4",
+          "probability": 100,
           "faults": {
             "before": [
               {
@@ -92,6 +96,7 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
     },
     {
       "designation": "service_3",
+      "probability": 100,
       "faults": {
         "before": [
           {
@@ -146,8 +151,9 @@ MicroSim is a tool that you can use to quickly create a mock distributed system 
 
 Client will request send this request to control plane which looks like the above request,
 
-- Then control plane will overwrite all the designation with correct ClusterIPs.
-    - Then the request will be forwarded to `service_1`.
+- Firstly control plane will overwrite all the designation with correct ClusterIPs.
+- Then control plane evaluate the probability of the request path, If it's within the limit
+    - The request will be forwarded to `service_1`.
     - `service_1` will first look at the `fatuls["before"]` sections in the request and execute those faults in order.
     - Then the routes part of the request will be taken out.
       - Then for `route` in each route will get called with the content of the `route`
