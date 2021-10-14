@@ -1,7 +1,8 @@
 import express from "express";
 import yargs from 'yargs/yargs';
-import { Route, Response, Fault } from "./model";
+import { Route, Response } from "./model";
 import {callNextDestination, castAndExcute} from "./utils"
+import morgan from "morgan";
 
 const argv = yargs(process.argv)
 .option('service-name', {
@@ -20,6 +21,7 @@ const argv = yargs(process.argv)
 .parseSync();
 
 const app = express()
+app.use(morgan('common'))
 app.use(express.json());
 
 const port = argv.port;

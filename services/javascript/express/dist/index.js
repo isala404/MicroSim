@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const yargs_1 = __importDefault(require("yargs/yargs"));
 const utils_1 = require("./utils");
+const morgan_1 = __importDefault(require("morgan"));
 const argv = (0, yargs_1.default)(process.argv)
     .option('service-name', {
     required: true,
@@ -31,6 +32,7 @@ const argv = (0, yargs_1.default)(process.argv)
     .alias('help', 'h')
     .parseSync();
 const app = (0, express_1.default)();
+app.use((0, morgan_1.default)('combined'));
 app.use(express_1.default.json());
 const port = argv.port;
 app.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
