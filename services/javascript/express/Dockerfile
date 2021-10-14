@@ -2,7 +2,7 @@ FROM node:lts as builder
 
 WORKDIR /usr/src/app
 
-COPY package.json .
+COPY . .
 
 RUN npm install
 
@@ -22,4 +22,4 @@ RUN npm install --only=production
 
 COPY --from=builder /usr/src/app/dist .
 
-CMD ["node", "--expose_gc", "dist/index.js"]
+CMD ["node", "--expose_gc", "index.js"]
