@@ -32,7 +32,7 @@ const argv = (0, yargs_1.default)(process.argv)
     .alias('help', 'h')
     .parseSync();
 const app = (0, express_1.default)();
-app.use((0, morgan_1.default)('combined'));
+app.use((0, morgan_1.default)('common'));
 app.use(express_1.default.json());
 const port = argv.port;
 app.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
