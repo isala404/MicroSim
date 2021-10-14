@@ -1,5 +1,7 @@
-import { Route, Response } from "./model"
+import { Route, Response, Fault } from "./model"
 import fetch from 'cross-fetch';
+import Latency from './faults/latency';
+import MemoryLeak from './faults/memory-leak';
 
 
 export const callNextDestination = async (route: Route): Promise<Response> => {
@@ -15,4 +17,22 @@ export const callNextDestination = async (route: Route): Promise<Response> => {
     const response = await rawResponse.json() as Response;
 
     return response;
+}
+
+// Not sure if this the right way to do this but hey, it works :)
+export const castAndExcute = async (fault: Fault) => {
+  let rawFault: any;
+
+  switch (fault.type) {
+    case 'latency':
+      rawFault = new Latency(fault.args);
+      break;
+    case 'memory-leak':
+      rawFault = new MemoryLeak(fault.args);
+      break;
+    default:
+      throw new Error(`Fault type ${fault.type} not implemented`);
+  }
+
+  await rawFault.run();
 }

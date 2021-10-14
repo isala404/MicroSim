@@ -1,7 +1,7 @@
 import express from "express";
 import yargs from 'yargs/yargs';
-import { Route, Response } from "./model";
-import {callNextDestination} from "./utils"
+import { Route, Response, Fault } from "./model";
+import {callNextDestination, castAndExcute} from "./utils"
 
 const argv = yargs(process.argv)
 .option('service-name', {
@@ -36,9 +36,13 @@ app.post('/', async (req, res) => {
 
   reply.address = payload.designation;
 
-  // for (const fault in payload.faults.before) {
-
-  // }
+  for (const fault of payload.faults.before) {
+    try {
+      await castAndExcute(fault);
+    } catch (error) {
+      reply.errors.push(error.message);
+    }
+  }
 
   if (payload.routes) {
     for (const route of payload.routes) {
@@ -53,10 +57,13 @@ app.post('/', async (req, res) => {
   }
 
 
-  // for (const fault in payload.faults.after) {
-
-  // }
-
+  for (const fault of payload.faults.after) {
+    try {
+      await castAndExcute(fault);
+    } catch (error) {
+      reply.errors.push(error.message);
+    }
+  }
 
   res.send(reply);
 })

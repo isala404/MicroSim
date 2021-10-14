@@ -1,6 +1,7 @@
 export interface Fault {
     type: string;
     args: any;
+    run(): Promise<void>;
 }
 
 export interface FaultState {

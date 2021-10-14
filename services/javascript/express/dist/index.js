@@ -42,8 +42,14 @@ app.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     };
     const payload = Object.assign({}, req.body);
     reply.address = payload.designation;
-    // for (const fault in payload.faults.before) {
-    // }
+    for (const fault of payload.faults.before) {
+        try {
+            yield (0, utils_1.castAndExcute)(fault);
+        }
+        catch (error) {
+            reply.errors.push(error.message);
+        }
+    }
     if (payload.routes) {
         for (const route of payload.routes) {
             let destRes = null;
@@ -56,12 +62,18 @@ app.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             reply.response.push(destRes);
         }
     }
-    // for (const fault in payload.faults.after) {
-    // }
+    for (const fault of payload.faults.after) {
+        try {
+            yield (0, utils_1.castAndExcute)(fault);
+        }
+        catch (error) {
+            reply.errors.push(error.message);
+        }
+    }
     res.send(reply);
 }));
 app.listen(port, () => {
     // tslint:disable-next-line:no-console
-    console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`App listening at http://localhost:${port}`);
 });
 //# sourceMappingURL=index.js.map
