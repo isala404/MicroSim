@@ -6,7 +6,7 @@ import MemoryLeak from './faults/memory-leak';
 
 export const callNextDestination = async (route: Route): Promise<Response> => {
   // tslint:disable-next-line:no-console
-  console.log(`Calling Next Destination, Designation=${route.designation} Body=${JSON.stringify(route)}`)
+  console.log(`${new Date().toISOString()} Calling Next Destination, Designation=${route.designation} Body=${JSON.stringify(route)}`)
   const rawResponse = await fetch(route.designation, {
     method: 'POST',
     headers: {

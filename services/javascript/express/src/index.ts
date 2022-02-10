@@ -14,7 +14,7 @@ const argv = yargs(process.argv)
   .option('port', {
     description: 'The port the web server will bind to',
     type: 'number',
-    default: 9090,
+    default: 8080,
   })
   .help()
   .alias('help', 'h')
@@ -29,10 +29,11 @@ app.use((req, res, next) => {
 })
 
 const port = argv.port;
+const serviceName = process.env.SERVICE_NAME || argv.serviceName;
 
 app.post('/', async (req, res) => {
   const reply: Response = {
-    service: argv.serviceName as string,
+    service: serviceName as string,
     address: "",
     errors: [],
     response: []
@@ -76,5 +77,5 @@ app.post('/', async (req, res) => {
 
 app.listen(port, () => {
   // tslint:disable-next-line:no-console
-  console.log(`App listening at http://localhost:${port}`)
+  console.log(`service: ${serviceName}, started on :${port}`)
 })
