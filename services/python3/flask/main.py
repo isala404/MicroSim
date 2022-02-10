@@ -16,8 +16,13 @@ args = parser.parse_args()
 # override of if ENV is present
 args.service_name = os.getenv("SERVICE_NAME", args.service_name)
 
-app = Flask(args.service_name)
-logging.basicConfig(level=logging.INFO)
+app = Flask('service')
+
+# Fix up the logger
+log = logging.getLogger('werkzeug')
+log.disabled = True
+app.logger.handlers[0].setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+app.logger.setLevel(level=logging.INFO)
 
 @app.before_request
 def log_request_info():

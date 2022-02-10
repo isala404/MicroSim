@@ -4,7 +4,7 @@ from faults.latency import Latency
 from faults.memory_leak import MemoryLeak
 import logging
 
-logger = logging.getLogger('werkzeug')
+logger = logging.getLogger('service')
 
 def call_next_destination(route: Route) -> Response:
     logger.info(f'Calling Next Destination, Designation={route["designation"]} Body={route}')
