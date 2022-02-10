@@ -3,6 +3,7 @@ import os
 from flask import Flask, request
 from models import *
 from utils import call_next_destination, cast_and_execute
+import logging
 
 parser = argparse.ArgumentParser()
 
@@ -15,8 +16,8 @@ args = parser.parse_args()
 # override of if ENV is present
 args.service_name = os.getenv("SERVICE_NAME", args.service_name)
 
-app = Flask('service')
-
+app = Flask(args.service_name)
+logging.basicConfig(level=logging.INFO)
 
 @app.before_request
 def log_request_info():
@@ -32,7 +33,6 @@ def add_header(response):
 @app.route("/", methods=["POST"])
 def handler():
     res = Response(args.service_name, "", [], [])
-
     try:
         payload = Route.from_json(request.data)
 

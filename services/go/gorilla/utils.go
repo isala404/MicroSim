@@ -38,15 +38,15 @@ func callNextDestination(route json.RawMessage) (*Response, error) {
 		return nil, err
 	}
 
-	var response *Response
 	reqBody, err := json.Marshal(route)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
-
+	log.Printf("Calling Next Destination, Designation=%s Body=%s", decodedPayload.Designation, pretty.Ugly(reqBody))
+	var response *Response
 	resp, err := http.Post(decodedPayload.Designation, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return response, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 

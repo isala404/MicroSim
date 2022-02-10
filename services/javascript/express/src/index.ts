@@ -1,28 +1,32 @@
 import express from "express";
 import yargs from 'yargs/yargs';
 import { Route, Response } from "./model";
-import {callNextDestination, castAndExcute} from "./utils"
+import { callNextDestination, castAndExcute } from "./utils"
 import morgan from "morgan";
 
 const argv = yargs(process.argv)
-.option('service-name', {
-  required: true,
-  default: 'Undefined',
-  type: 'string',
-  description: 'The name set on the response',
-})
-.option('port', {
+  .option('service-name', {
+    required: true,
+    default: 'Undefined',
+    type: 'string',
+    description: 'The name set on the response',
+  })
+  .option('port', {
     description: 'The port the web server will bind to',
     type: 'number',
     default: 9090,
-})
-.help()
-.alias('help', 'h')
-.parseSync();
+  })
+  .help()
+  .alias('help', 'h')
+  .parseSync();
 
 const app = express()
-app.use(morgan('common'))
 app.use(express.json());
+app.use((req, res, next) => {
+  // tslint:disable-next-line:no-console
+  console.log(`${new Date().toISOString()} RemoteAddr=${req.hostname} Method=${req.method} Path=${req.path} Body=${JSON.stringify(req.body)}`)
+  next()
+})
 
 const port = argv.port;
 
@@ -34,7 +38,7 @@ app.post('/', async (req, res) => {
     response: []
   };
 
-  const payload: Route = {...req.body}
+  const payload: Route = { ...req.body }
 
   reply.address = payload.designation;
 
