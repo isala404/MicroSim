@@ -35,7 +35,7 @@ type SimulationRef struct {
 
 // LoadGeneratorSpec defines the desired state of LoadGenerator
 type LoadGeneratorSpec struct {
-	Request string `json:"request"`
+	Routes []string `json:"requests"`
 	// +optional
 	// +kubebuilder:default=1
 	Replicas      int           `json:"replicas"`

@@ -41,11 +41,13 @@ spec:
               replicas:
                 default: 1
                 type: integer
-              request:
-                type: string
               requestCount:
                 minimum: 0
                 type: integer
+              requests:
+                items:
+                  type: string
+                type: array
               simulationRef:
                 properties:
                   name:
@@ -60,7 +62,7 @@ spec:
                 type: string
             required:
             - betweenDelay
-            - request
+            - requests
             - simulationRef
             type: object
           status:

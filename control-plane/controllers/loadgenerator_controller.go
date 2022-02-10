@@ -109,15 +109,16 @@ func (r *LoadGeneratorReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	var payload microsimv1alpha1.Route
-	if err := json.Unmarshal([]byte(loadGenerator.Spec.Request), &payload); err != nil {
-		logger.Error(err, "error while decoding request spec")
+	for _, request := range loadGenerator.Spec.Routes {
+		var route microsimv1alpha1.Route
+		if err := json.Unmarshal([]byte(request), &route); err != nil {
+			logger.Error(err, "error while decoding request spec")
+		}
+		route = overwriteDesignations(ctx, route)
+		// Send all the requests in background thread
+		// This is done because some request may take 10+ seconds and that value will be added spec.delayBetween
+		go r.processRequests(ctx, req, route)
 	}
-	payload = overwriteDesignations(ctx, payload)
-
-	// Send all the requests in background thread
-	// This is done because some request may take 10+ seconds and that value will be added spec.delayBetween
-	go r.processRequests(ctx, req, payload)
 
 	logger.V(1).Info(fmt.Sprintf("requeuing in %s", loadGenerator.Spec.BetweenDelay.Duration))
 	return ctrl.Result{RequeueAfter: loadGenerator.Spec.BetweenDelay.Duration}, nil
@@ -137,10 +138,11 @@ func (r *LoadGeneratorReconciler) processRequests(ctx context.Context, req ctrl.
 	var responseTime time.Duration
 	responses := make(map[string]microsimv1alpha1.Responses)
 	for i := 0; i < loadGenerator.Spec.Replicas; i++ {
-		res := <-results
-		responseTime += res.ResponseTimes
-		for s, m := range res.Response {
-			responses[s] = m
+		if res := <-results; res != nil {
+			responseTime += res.ResponseTimes
+			for s, m := range res.Response {
+				responses[s] = m
+			}
 		}
 	}
 
@@ -178,39 +180,39 @@ func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route micr
 	responses := make(map[string]microsimv1alpha1.Responses)
 	startedTime := time.Now()
 
-	for i, r2 := range route.Routes {
-		logger.V(1).Info(fmt.Sprintf("sending %d request", i), "designation", route.Designation)
-		reqBody, err := json.Marshal(r2)
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("failed encoded request route #%d", i), "route", r2)
-			results <- nil
-			return
-		}
-
-		resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
-		if err != nil {
-			logger.Error(err, "failed send the request to designation", "designation", route.Designation)
-			results <- nil
-			return
-		}
-		defer resp.Body.Close()
-
-		buf, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("failed decoded response for route #%d", i), "route", r2)
-			results <- nil
-			return
-		}
-
-		// Store only unique requests and responses
-		reqRespHash := GetMD5Hash(append(buf, reqBody...))
-
-		responses[reqRespHash] = microsimv1alpha1.Responses{
-			Response: string(buf),
-			Request:  string(reqBody),
-		}
+	//for i, r2 := range route.Routes {
+	logger.V(1).Info("sending request", "designation", route.Designation)
+	reqBody, err := json.Marshal(route)
+	if err != nil {
+		logger.Error(err, "failed encoded request route #%d", "route", route)
+		results <- nil
+		return
 	}
+
+	resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		logger.Error(err, "failed send the request to designation", "designation", route.Designation)
+		results <- nil
+		return
+	}
+	defer resp.Body.Close()
+
+	buf, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		logger.Error(err, "failed decoded response for route", "route", route)
+		results <- nil
+		return
+	}
+
+	// Store only unique requests and responses
+	reqRespHash := GetMD5Hash(append(buf, reqBody...))
+
+	responses[reqRespHash] = microsimv1alpha1.Responses{
+		Response: string(buf),
+		Request:  string(reqBody),
+	}
+	//}
 
 	results <- &requestStatus{
 		Response:      responses,

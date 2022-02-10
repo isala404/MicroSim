@@ -1,84 +1,53 @@
 apiVersion: microsim.isala.me/v1alpha1
 kind: LoadGenerator
 metadata:
-  name: loadgenerator-sample
+    name: loadgenerator-sample
 spec:
-  request: |
-    {
-      "designation": "service_1",
-      "probability": 100,
-      "faults": {
-        "before": [
-          {
-            "type": "latency",
-            "args": {
-              "delay": 600
-            }
-          }
-        ],
-        "after": [
-          {
-            "type": "memory-leak",
-            "args": {
-              "size": 250,
-              "duration": 10000
-            }
-          }
-        ]
-      },
-      "routes": [
-        {
-          "designation": "service_2",
-          "probability": 50,
-          "faults": {
-            "before": [],
-            "after": [
-              {
-                "type": "latency",
-                "args": {
-                  "delay": 600
-                }
-              }
-            ]
-          },
-          "routes": [
+    requests:
+        - |
             {
-              "designation": "service_4",
-              "probability": 100,
-              "faults": {
-                "before": [
-                  {
-                    "type": "latency",
-                    "args": {
-                      "delay": 200
+                "designation": "service_1",
+                "probability": 100,
+                "faults": {
+                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                },
+                "routes": [
+                    {
+                        "designation": "service_2",
+                        "probability": 100,
+                        "faults": {
+                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                        },
+                        "routes": [
+                            {
+                                "designation": "service_3",
+                                "probability": 100,
+                                "faults": {
+                                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                },
+                                "routes": [
+                                    {
+                                        "designation": "service_4",
+                                        "probability": 100,
+                                        "faults": {
+                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                        },
+                                        "routes": null
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  }
-                ],
-                "after": []
-              }
+                ]
             }
-          ]
-        },
-        {
-          "designation": "service_3",
-          "probability": 100,
-          "faults": {
-            "before": [
-              {
-                "type": "latency",
-                "args": {
-                  "delay": 1000
-                }
-              }
-            ],
-            "after": []
-          }
-        }
-      ]
-    }
-  simulationRef:
-    name: simulation-sample
-    namespace: default
-  requestCount: 10
-#  timeout: 15m
-  betweenDelay: 20s
+    simulationRef:
+        name: simulation-sample
+        namespace: default
+    requestCount: 1
+    replicas: 1
+    #  timeout: 15m
+    betweenDelay: 10s
