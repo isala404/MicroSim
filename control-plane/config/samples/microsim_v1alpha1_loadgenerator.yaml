@@ -22,23 +22,13 @@ spec:
                         },
                         "routes": [
                             {
-                                "designation": "service_3",
+                                "designation": "service_4",
                                 "probability": 100,
                                 "faults": {
                                     "before": [{"type": "latency", "args": { "delay": 600 }}],
                                     "after": [{"type": "latency", "args": { "delay": 600 }}]
                                 },
-                                "routes": [
-                                    {
-                                        "designation": "service_4",
-                                        "probability": 100,
-                                        "faults": {
-                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
-                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
-                                        },
-                                        "routes": null
-                                    }
-                                ]
+                                "routes": null
                             }
                         ]
                     }
@@ -47,7 +37,7 @@ spec:
     simulationRef:
         name: simulation-sample
         namespace: default
-    requestCount: 1
+#    requestCount: 1
     replicas: 1
-    #  timeout: 15m
+#    timeout: 15m
     betweenDelay: 10s

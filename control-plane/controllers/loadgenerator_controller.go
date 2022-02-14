@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -189,7 +190,20 @@ func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route micr
 		return
 	}
 
-	resp, err := http.Post(route.Designation, "application/json", bytes.NewBuffer(reqBody))
+	httpClient := http.Client{}
+	req, err := http.NewRequest("POST", route.Designation, bytes.NewBuffer(reqBody))
+	if err != nil {
+		logger.Error(err, "failed send the request to designation", "designation", route.Designation)
+		results <- nil
+		return
+	}
+	reqID := uuid.New()
+	req.Header = http.Header{
+		"Content-Type": []string{"application/json"},
+		"X-Request-ID": []string{reqID.String()},
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		logger.Error(err, "failed send the request to designation", "designation", route.Designation)
 		results <- nil

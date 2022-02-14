@@ -24,7 +24,7 @@ const app = express()
 app.use(express.json());
 app.use((req, res, next) => {
   // tslint:disable-next-line:no-console
-  console.log(`${new Date().toISOString()} RemoteAddr=${req.hostname} Method=${req.method} Path=${req.path} Body=${JSON.stringify(req.body)}`)
+  console.log(`${new Date().toISOString()} RequestID=${req.header('X-Request-ID')}, RemoteAddr=${req.hostname}, Method=${req.method}, Path=${req.path}, Body=${JSON.stringify(req.body)}`)
   next()
 })
 
@@ -38,7 +38,7 @@ app.post('/', async (req, res) => {
     errors: [],
     response: []
   };
-
+  const reqID = req.header('X-Request-ID')
   const payload: Route = { ...req.body }
 
   reply.address = payload.designation;
@@ -55,7 +55,7 @@ app.post('/', async (req, res) => {
     for (const route of payload.routes) {
       let destRes: Response = null;
       try {
-        destRes = await callNextDestination(route);
+        destRes = await callNextDestination(route, reqID);
       } catch (e) {
         reply.errors.push(e.message);
       }
@@ -71,6 +71,9 @@ app.post('/', async (req, res) => {
       reply.errors.push(error.message);
     }
   }
+
+  // tslint:disable-next-line:no-console
+  console.log(`${new Date().toISOString()} RequestID=${reqID}, Response=${JSON.stringify(reply)}`)
 
   res.send(reply);
 })

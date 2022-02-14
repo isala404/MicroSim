@@ -1,23 +1,22 @@
-import { Route, Response, Fault } from "./model"
+import { Fault, Response, Route } from "./model"
 import fetch from 'cross-fetch';
 import Latency from './faults/latency';
 import MemoryLeak from './faults/memory-leak';
 
 
-export const callNextDestination = async (route: Route): Promise<Response> => {
+export const callNextDestination = async (route: Route, reqID: string): Promise<Response> => {
   // tslint:disable-next-line:no-console
-  console.log(`${new Date().toISOString()} Calling Next Destination, Designation=${route.designation} Body=${JSON.stringify(route)}`)
+  console.log(`${new Date().toISOString()} RequestID=${reqID}, Calling Next Destination, Designation=${route.designation} Body=${JSON.stringify(route)}`)
   const rawResponse = await fetch(route.designation, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-Request-ID': reqID
     },
     body: JSON.stringify(route)
   });
-  const response = await rawResponse.json() as Response;
-
-  return response;
+  return await rawResponse.json() as Response;
 }
 
 // Not sure if this the right way to do this but hey, it works :)

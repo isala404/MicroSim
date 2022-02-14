@@ -26,7 +26,7 @@ app.logger.setLevel(level=logging.INFO)
 
 @app.before_request
 def log_request_info():
-    app.logger.info(f'RemoteAddr:{request.remote_addr} Method:{request.method} Body:{request.get_json()}')
+    app.logger.info(f'RequestID={request.headers.get("X-Request-ID")}, RemoteAddr={request.remote_addr}, Method={request.method}, Body={request.get_json()}')
 
 
 @app.after_request
@@ -38,6 +38,7 @@ def add_header(response):
 @app.route("/", methods=["POST"])
 def handler():
     res = Response(args.service_name, "", [], [])
+    req_id = request.headers.get('X-Request-ID')
     try:
         payload = Route.from_json(request.data)
 
@@ -54,7 +55,7 @@ def handler():
         if payload.routes:
             for route in payload.routes:
                 try:
-                    dest_res = call_next_destination(route)
+                    dest_res = call_next_destination(route, req_id)
                     res.response.append(dest_res)
                 except Exception as e:
                     app.logger.exception("error while forwarding request")
@@ -68,7 +69,11 @@ def handler():
                 res.errors.append(err)
 
         # Return the response to calling service
-        return res.to_json()
+        res = res.to_json()
+
+        app.logger.info(f'RequestID={req_id}, Response={res}')
+
+        return res
     except (AttributeError, KeyError) as e:
         return {"error": str(e)}, 400
 

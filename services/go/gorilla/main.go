@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/MrSupiri/MicroSim/service/gorilla/faults"
 	"github.com/gorilla/mux"
+	"github.com/tidwall/pretty"
 	"log"
 	"net/http"
 )
@@ -49,7 +50,7 @@ func main() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	var payload Route
 	res := Response{Service: serviceName, Errors: []string{}, Response: []*Response{}}
-
+	reqID := r.Header.Get("X-Request-ID")
 	w.Header().Set("content-type", "application/json")
 
 	// Get the request payload
@@ -73,7 +74,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	res.Response = make([]*Response, len(payload.Routes))
 	// Forward the request to next service if the destination is defined
 	for i, route := range payload.Routes {
-		destRes, err := callNextDestination(route)
+		destRes, err := callNextDestination(route, reqID)
 		if err != nil {
 			res.Errors = append(res.Errors, err.Error())
 			log.Println("error while forwarding request", err)
@@ -85,6 +86,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if err := fault.Run(); err != nil {
 			res.Errors = append(res.Errors, err.Error())
 		}
+	}
+	if resEn, err := json.Marshal(res); err == nil {
+		log.Printf(
+			"RequestID=%s, Response=%s",
+			reqID,
+			pretty.Ugly(resEn),
+		)
 	}
 
 	// Return the response to calling service

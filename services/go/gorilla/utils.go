@@ -19,7 +19,8 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		log.Printf(
-			"RemoteAddr=%s Method=%s Path=%s Body=%s",
+			"RequestID=%s, RemoteAddr=%s, Method=%s, Path=%s, Body=%s",
+			r.Header.Get("X-Request-ID"),
 			r.RemoteAddr,
 			r.Method,
 			r.RequestURI,
@@ -32,7 +33,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 // callNextDestination get the payload out ouf the request partially decoded it and send the raw data next Destination
-func callNextDestination(route json.RawMessage) (*Response, error) {
+func callNextDestination(route json.RawMessage, reqID string) (*Response, error) {
 	var decodedPayload Route
 	if err := json.Unmarshal(route, &decodedPayload); err != nil {
 		return nil, err
@@ -42,9 +43,21 @@ func callNextDestination(route json.RawMessage) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Calling Next Destination, Designation=%s Body=%s", decodedPayload.Designation, pretty.Ugly(reqBody))
+	log.Printf("RequestID=%s, Calling Next Destination, Designation=%s, Body=%s", reqID, decodedPayload.Designation, pretty.Ugly(reqBody))
 	var response *Response
-	resp, err := http.Post(decodedPayload.Designation, "application/json", bytes.NewBuffer(reqBody))
+
+	client := http.Client{}
+	req, err := http.NewRequest("POST", decodedPayload.Designation, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header = http.Header{
+		"Content-Type": []string{"application/json"},
+		"X-Request-ID": []string{reqID},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
