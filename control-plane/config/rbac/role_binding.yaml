@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: manager-rolebinding
+  name: microsim
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: microsim
 subjects:
-- kind: ServiceAccount
-  name: controller-manager
-  namespace: system
+  - kind: ServiceAccount
+    name: microsim
+    namespace: microsim

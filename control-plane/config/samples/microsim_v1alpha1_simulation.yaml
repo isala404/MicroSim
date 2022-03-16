@@ -2,6 +2,7 @@ apiVersion: microsim.isala.me/v1alpha1
 kind: Simulation
 metadata:
   name: simulation-sample
+  namespace: default
 spec:
   name:
   services:

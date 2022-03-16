@@ -1,7 +1,8 @@
 apiVersion: microsim.isala.me/v1alpha1
 kind: LoadGenerator
 metadata:
-    name: loadgenerator-sample
+    name: loadgenerator-1
+    namespace: default
 spec:
     requests:
         - |
@@ -15,20 +16,30 @@ spec:
                 "routes": [
                     {
                         "designation": "service_2",
-                        "probability": 100,
+                        "probability": 50,
                         "faults": {
                             "before": [{"type": "latency", "args": { "delay": 600 }}],
                             "after": [{"type": "latency", "args": { "delay": 600 }}]
                         },
                         "routes": [
                             {
-                                "designation": "service_4",
-                                "probability": 100,
+                                "designation": "service_3",
+                                "probability": 50,
                                 "faults": {
                                     "before": [{"type": "latency", "args": { "delay": 600 }}],
                                     "after": [{"type": "latency", "args": { "delay": 600 }}]
                                 },
-                                "routes": null
+                                "routes": [
+                                    {
+                                        "designation": "service_4",
+                                        "probability": 50,
+                                        "faults": {
+                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                        },
+                                        "routes": null
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -37,7 +48,172 @@ spec:
     simulationRef:
         name: simulation-sample
         namespace: default
-#    requestCount: 1
-    replicas: 1
-#    timeout: 15m
-    betweenDelay: 10s
+    # requestCount: 1
+    replicas: 10
+    # timeout: 15m
+    betweenDelay: 1s
+---
+apiVersion: microsim.isala.me/v1alpha1
+kind: LoadGenerator
+metadata:
+    name: loadgenerator-2
+    namespace: default
+spec:
+    requests:
+        - |
+            {
+                "designation": "service_4",
+                "probability": 100,
+                "faults": {
+                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                },
+                "routes": [
+                    {
+                        "designation": "service_3",
+                        "probability": 50,
+                        "faults": {
+                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                        },
+                        "routes": [
+                            {
+                                "designation": "service_2",
+                                "probability": 50,
+                                "faults": {
+                                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                },
+                                "routes": [
+                                    {
+                                        "designation": "service_1",
+                                        "probability": 50,
+                                        "faults": {
+                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                        },
+                                        "routes": null
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+    simulationRef:
+        name: simulation-sample
+        namespace: default
+    # requestCount: 1
+    replicas: 10
+    # timeout: 15m
+    betweenDelay: 1s
+---
+apiVersion: microsim.isala.me/v1alpha1
+kind: LoadGenerator
+metadata:
+    name: loadgenerator-3
+    namespace: default
+spec:
+    requests:
+        - |
+            {
+                "designation": "service_2",
+                "probability": 100,
+                "faults": {
+                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                },
+                "routes": [
+                    {
+                        "designation": "service_4",
+                        "probability": 50,
+                        "faults": {
+                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                        },
+                        "routes": [
+                            {
+                                "designation": "service_1",
+                                "probability": 50,
+                                "faults": {
+                                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                },
+                                "routes": [
+                                    {
+                                        "designation": "service_3",
+                                        "probability": 50,
+                                        "faults": {
+                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                        },
+                                        "routes": null
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+    simulationRef:
+        name: simulation-sample
+        namespace: default
+    # requestCount: 1
+    replicas: 10
+    # timeout: 15m
+    betweenDelay: 1s
+---
+apiVersion: microsim.isala.me/v1alpha1
+kind: LoadGenerator
+metadata:
+    name: loadgenerator-4
+    namespace: default
+spec:
+    requests:
+        - |
+            {
+                "designation": "service_3",
+                "probability": 100,
+                "faults": {
+                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                },
+                "routes": [
+                    {
+                        "designation": "service_1",
+                        "probability": 50,
+                        "faults": {
+                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                        },
+                        "routes": [
+                            {
+                                "designation": "service_4",
+                                "probability": 50,
+                                "faults": {
+                                    "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                    "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                },
+                                "routes": [
+                                    {
+                                        "designation": "service_2",
+                                        "probability": 50,
+                                        "faults": {
+                                            "before": [{"type": "latency", "args": { "delay": 600 }}],
+                                            "after": [{"type": "latency", "args": { "delay": 600 }}]
+                                        },
+                                        "routes": null
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+    simulationRef:
+        name: simulation-sample
+        namespace: default
+    # requestCount: 1
+    replicas: 10
+    # timeout: 15m
+    betweenDelay: 1s
