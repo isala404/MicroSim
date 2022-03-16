@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/tidwall/pretty"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/tidwall/pretty"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -46,7 +47,10 @@ func callNextDestination(route json.RawMessage, reqID string) (*Response, error)
 	log.Printf("RequestID=%s, Calling Next Destination, Designation=%s, Body=%s", reqID, decodedPayload.Designation, pretty.Ugly(reqBody))
 	var response *Response
 
-	client := http.Client{}
+	client := http.Client{
+		Transport: &http.Transport{DisableKeepAlives: true},
+	}
+	defer client.CloseIdleConnections()
 	req, err := http.NewRequest("POST", decodedPayload.Designation, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, err
@@ -58,10 +62,10 @@ func callNextDestination(route json.RawMessage, reqID string) (*Response, error)
 	}
 
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return response, err

@@ -94,7 +94,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			pretty.Ugly(resEn),
 		)
 	}
-
+	w.WriteHeader(http.StatusOK)
 	// Return the response to calling service
 	_ = json.NewEncoder(w).Encode(res)
+	r.Body.Close()
 }

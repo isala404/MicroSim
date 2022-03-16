@@ -8,7 +8,7 @@ logger = logging.getLogger('service')
 
 def call_next_destination(route: Route, req_id: str) -> Response:
     logger.info(f'RequestID={req_id}, Calling Next Destination, Designation={route["designation"]} Body={route}')
-    res = requests.post(route["designation"], json=route, headers={"content-type": "application/json", "X-Request-ID": req_id})
+    res = requests.post(route["designation"], json=route, headers={"content-type": "application/json", "X-Request-ID": req_id, "Connection": "close"})
     return Response.from_dict(res.json())
 
 

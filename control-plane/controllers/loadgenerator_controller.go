@@ -190,7 +190,10 @@ func (r *LoadGeneratorReconciler) forwardRequest(ctx context.Context, route micr
 		return
 	}
 
-	httpClient := http.Client{}
+	httpClient := http.Client{
+		Transport: &http.Transport{DisableKeepAlives: true},
+	}
+	defer httpClient.CloseIdleConnections()
 	req, err := http.NewRequest("POST", route.Designation, bytes.NewBuffer(reqBody))
 	if err != nil {
 		logger.Error(err, "failed send the request to designation", "designation", route.Designation)

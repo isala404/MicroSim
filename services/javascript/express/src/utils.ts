@@ -14,6 +14,7 @@ export const callNextDestination = async (route: Route, reqID: string): Promise<
       'Content-Type': 'application/json',
       'X-Request-ID': reqID
     },
+    keepalive: false,
     body: JSON.stringify(route)
   });
   return await rawResponse.json() as Response;
